@@ -124,6 +124,17 @@ class SteamWrap
 		return active && report("setStat", [id, Std.string(val)], SteamWrap_SetStat(id, val));
 	}
 
+	public static function getStat(id:String):Int
+	{
+		if (!active) {
+			return -1;
+		}
+
+		var val = SteamWrap_GetStat(id);
+		report("getStat", [id], val != 0);
+		return val;
+	}
+
 	public static function storeStats():Bool
 	{
 		return active && report("storeStats", [], SteamWrap_StoreStats());
