@@ -7,6 +7,14 @@ private enum LeaderboardOp
 	DOWNLOAD(id:String);
 }
 
+enum NotificationPosition
+{
+	TopLeft;
+	TopRight;
+	BottomLeft;
+	BottomRight;
+}
+
 class SteamWrap
 {
 	public static var active(default,null):Bool = false;
@@ -39,6 +47,7 @@ class SteamWrap
 			SteamWrap_Init = cpp.Lib.load("steamwrap", "SteamWrap_Init", 1);
 			SteamWrap_Shutdown = cpp.Lib.load("steamwrap", "SteamWrap_Shutdown", 0);
 			SteamWrap_RunCallbacks = cpp.Lib.load("steamwrap", "SteamWrap_RunCallbacks", 0);
+			SteamWrap_SetNotificationPosition = cpp.Lib.load("steamwrap", "SteamWrap_SetNotificationPosition", 1);
 			SteamWrap_RequestStats = cpp.Lib.load("steamwrap", "SteamWrap_RequestStats", 0);
 			SteamWrap_GetStat = cpp.Lib.load("steamwrap", "SteamWrap_GetStat", 1);
 			SteamWrap_SetStat = cpp.Lib.load("steamwrap", "SteamWrap_SetStat", 2);
@@ -110,6 +119,11 @@ class SteamWrap
 		return result;
 	}
 
+	public static function setNotificationPosition(notifyPos:NotificationPosition):Bool
+	{
+		return active && report("setNotificationPosition", [Type.enumConstructor(notifyPos)], SteamWrap_SetNotificationPosition(Type.enumIndex(notifyPos)));
+	}
+	
 	public static function setAchievement(id:String):Bool
 	{
 		return active && report("setAchievement", [id], SteamWrap_SetAchievement(id));
@@ -256,6 +270,7 @@ class SteamWrap
 
 	private static var SteamWrap_Init:Dynamic;
 	private static var SteamWrap_Shutdown:Dynamic;
+	private static var SteamWrap_SetNotificationPosition:Dynamic;
 	private static var SteamWrap_RunCallbacks:Dynamic;
 	private static var SteamWrap_RequestStats:Dynamic;
 	private static var SteamWrap_GetStat:Dynamic;
@@ -302,5 +317,3 @@ class LeaderboardScore
 			return null;
 	}
 }
-
-

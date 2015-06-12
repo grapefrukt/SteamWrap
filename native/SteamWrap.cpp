@@ -273,6 +273,19 @@ void SteamWrap_RunCallbacks()
 DEFINE_PRIM(SteamWrap_RunCallbacks, 0);
 
 //-----------------------------------------------------------------------------------------------------------
+value SteamWrap_SetNotificationPosition(value notifyPos)
+{
+	ENotificationPosition np = (ENotificationPosition)val_int(notifyPos);
+	if (np < k_EPositionTopLeft || np > k_EPositionBottomRight)
+	{
+		return alloc_bool(false);
+	}
+	SteamUtils()->SetOverlayNotificationPosition(np);
+ 	return alloc_bool(true);
+}
+DEFINE_PRIM(SteamWrap_SetNotificationPosition, 1);
+
+//-----------------------------------------------------------------------------------------------------------
 value SteamWrap_RequestStats()
 {
 	if (!CheckInit())
