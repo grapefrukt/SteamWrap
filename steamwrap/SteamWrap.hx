@@ -64,6 +64,7 @@ class SteamWrap
 			SteamWrap_IndicateAchievementProgress = cpp.Lib.load("steamwrap", "SteamWrap_IndicateAchievementProgress", 3);
 			SteamWrap_StoreStats = cpp.Lib.load("steamwrap", "SteamWrap_StoreStats", 0);
 			SteamWrap_FindLeaderboard = cpp.Lib.load("steamwrap", "SteamWrap_FindLeaderboard", 1);
+			SteamWrap_GetLeaderboardEntryCount = cpp.Lib.load("steamwrap", "SteamWrap_GetLeaderboardEntryCount", 1);
 			SteamWrap_UploadScore = cpp.Lib.load("steamwrap", "SteamWrap_UploadScore", 3);
 			SteamWrap_DownloadScores = cpp.Lib.load("steamwrap", "SteamWrap_DownloadScores", 4);
 			SteamWrap_RequestGlobalStats = cpp.Lib.load("steamwrap", "SteamWrap_RequestGlobalStats", 0);
@@ -175,6 +176,16 @@ class SteamWrap
 		}
 	}
 
+	// This becomes valid once a score completes uploading to or downloading from the specified leaderboard. Until then, it will return 0.
+	public static function getLeaderboardEntryCount(id:String):Int
+	{
+		if (!active)
+			return 0;
+		var val = SteamWrap_GetLeaderboardEntryCount(id);
+		report("getLeaderboardEntryCount", [id], val != 0);
+		return val;
+	}
+	
 	public static function uploadLeaderboardScore(score:LeaderboardScore):Bool
 	{
 		if (!active) return false;
@@ -293,6 +304,7 @@ class SteamWrap
 	private static var SteamWrap_IndicateAchievementProgress:Dynamic;
 	private static var SteamWrap_StoreStats:Dynamic;
 	private static var SteamWrap_FindLeaderboard:Dynamic;
+	private static var SteamWrap_GetLeaderboardEntryCount:String->Int;
 	private static var SteamWrap_UploadScore:String->Int->Array<Int>->Bool;
 	private static var SteamWrap_DownloadScores:String->Int->Int->Int->Bool;
 	private static var SteamWrap_RequestGlobalStats:Dynamic;

@@ -69,6 +69,8 @@ public:
 	void OnLeaderboardFound( LeaderboardFindResult_t *pResult, bool bIOFailure);
 	CCallResult<CallbackHandler, LeaderboardFindResult_t> m_callResultFindLeaderboard;
 	
+	int GetLeaderboardEntryCount(const std::string& leaderboardId);
+	
 	bool UploadScore(const std::string& leaderboardId, int score, int *details);
 	void OnScoreUploaded( LeaderboardScoreUploaded_t *pResult, bool bIOFailure);
 	CCallResult<CallbackHandler, LeaderboardScoreUploaded_t> m_callResultUploadScore;
@@ -120,6 +122,14 @@ void CallbackHandler::OnLeaderboardFound(LeaderboardFindResult_t *pCallback, boo
 	{
 		SendEvent(Event(kEventTypeOnLeaderboardFound, false));
 	}
+}
+
+int CallbackHandler::GetLeaderboardEntryCount(const std::string& leaderboardId)
+{
+   	if (m_leaderboards.find(leaderboardId) == m_leaderboards.end() || m_leaderboards[leaderboardId] == 0)
+   		return 0;
+
+	return SteamUserStats()->GetLeaderboardEntryCount(m_leaderboards[leaderboardId]);
 }
 
 bool CallbackHandler::UploadScore(const std::string& leaderboardId, int score, int *details)
@@ -376,6 +386,16 @@ value SteamWrap_FindLeaderboard(value name)
  	return alloc_bool(true);
 }
 DEFINE_PRIM(SteamWrap_FindLeaderboard, 1);
+
+//-----------------------------------------------------------------------------------------------------------
+value SteamWrap_GetLeaderboardEntryCount(value name)
+{
+	if (!val_is_string(name) || !CheckInit())
+		return alloc_bool(false);
+
+	return alloc_int(s_callbackHandler->GetLeaderboardEntryCount(val_string(name)));
+}
+DEFINE_PRIM(SteamWrap_GetLeaderboardEntryCount, 1);
 
 //-----------------------------------------------------------------------------------------------------------
 value SteamWrap_UploadScore(value name, value score, value details)
