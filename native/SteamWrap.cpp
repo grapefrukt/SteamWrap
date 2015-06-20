@@ -292,6 +292,19 @@ value SteamWrap_SetNotificationPosition(value notifyPos)
 DEFINE_PRIM(SteamWrap_SetNotificationPosition, 1);
 
 //-----------------------------------------------------------------------------------------------------------
+value SteamWrap_GetUserID64()
+{
+	if (!CheckInit())
+		return alloc_string("");
+	
+	std::ostringstream strID;
+	strID << SteamUser()->GetSteamID().ConvertToUint64();
+	
+	return alloc_string(strID.str().c_str());
+}
+DEFINE_PRIM(SteamWrap_GetUserID64, 0);
+
+//-----------------------------------------------------------------------------------------------------------
 value SteamWrap_RequestStats()
 {
 	if (!CheckInit())
