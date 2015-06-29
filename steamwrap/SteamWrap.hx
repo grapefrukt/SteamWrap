@@ -1,4 +1,5 @@
 package steamwrap;
+import cpp.Lib;
 import steamwrap.SteamWrap.LeaderboardScore;
 
 private enum LeaderboardOp
@@ -57,6 +58,7 @@ class SteamWrap
 			SteamWrap_RunCallbacks = cpp.Lib.load("steamwrap", "SteamWrap_RunCallbacks", 0);
 			SteamWrap_SetNotificationPosition = cpp.Lib.load("steamwrap", "SteamWrap_SetNotificationPosition", 1);
 			SteamWrap_GetUserID64 = cpp.Lib.load("steamwrap", "SteamWrap_GetUserID64", 0);
+			SteamWrap_GetUsername = Lib.load("steamwrap", "SteamWrap_GetUsername", 0);
 			SteamWrap_RequestStats = cpp.Lib.load("steamwrap", "SteamWrap_RequestStats", 0);
 			SteamWrap_GetStat = cpp.Lib.load("steamwrap", "SteamWrap_GetStat", 1);
 			SteamWrap_SetStat = cpp.Lib.load("steamwrap", "SteamWrap_SetStat", 2);
@@ -141,6 +143,15 @@ class SteamWrap
 		var userID:String = SteamWrap_GetUserID64();
 		report("getUserID64", [], userID.length > 0);
 		return userID;
+	}
+	
+	public static function getUsername():String
+	{
+		if (!active) return "";
+		
+		var username:String = SteamWrap_GetUsername();
+		report("getUsername", [], username.length > 0);
+		return username;
 	}
 	
 	public static function setAchievement(id:String):Bool
@@ -307,6 +318,7 @@ class SteamWrap
 	private static var SteamWrap_SetNotificationPosition:Dynamic;
 	private static var SteamWrap_RunCallbacks:Dynamic;
 	private static var SteamWrap_GetUserID64:Void->String;
+	private static var SteamWrap_GetUsername:Void->String;
 	private static var SteamWrap_RequestStats:Dynamic;
 	private static var SteamWrap_GetStat:Dynamic;
 	private static var SteamWrap_SetStat:Dynamic;

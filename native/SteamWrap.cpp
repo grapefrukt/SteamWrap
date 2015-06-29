@@ -305,6 +305,18 @@ value SteamWrap_GetUserID64()
 DEFINE_PRIM(SteamWrap_GetUserID64, 0);
 
 //-----------------------------------------------------------------------------------------------------------
+value SteamWrap_GetUsername()
+{
+	if (!CheckInit())
+		return alloc_string("");
+	
+	std::string username = SteamFriends()->GetFriendPersonaName(SteamUser()->GetSteamID());
+	
+	return alloc_string(username.c_str());
+}
+DEFINE_PRIM(SteamWrap_GetUsername, 0);
+
+//-----------------------------------------------------------------------------------------------------------
 value SteamWrap_RequestStats()
 {
 	if (!CheckInit())
