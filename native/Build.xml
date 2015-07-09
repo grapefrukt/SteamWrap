@@ -51,7 +51,7 @@
 	<lib name="lib/linux32/libsteam_api.so" if="HXCPP_M32" />
 	<outdir name="../ndll/Linux" if="HXCPP_M32" />
 
-	<flag value="-Wl,-rpath,'$ORIGIN/:/lib:/usr/lib'" />
+	<flag value="-Wl,-rpath,$ORIGIN:/lib:/usr/lib" />
 </target>
 
 <target id="default">
