@@ -1,10 +1,27 @@
 package steamwrap;
+import cpp.Lib;
+import steamwrap.SteamWrap.LeaderboardScore;
 
 private enum LeaderboardOp
 {
 	FIND(id:String);
 	UPLOAD(score:LeaderboardScore);
-	DOWNLOAD(id:String);
+	DOWNLOAD(id:String, requestType:LeaderboardRequestType, start:Int, end:Int);
+}
+
+enum LeaderboardRequestType
+{
+	Global; // "start" and "end" are absolutes
+	GlobalAroundUser; // "start" and "end" are relative; ie. "start -2", "end 2" will retrieve 2 before, 2 after
+	Friends; // "start" and "end" are ignored
+}
+
+enum NotificationPosition
+{
+	TopLeft;
+	TopRight;
+	BottomLeft;
+	BottomRight;
 }
 
 class SteamWrap
@@ -13,7 +30,7 @@ class SteamWrap
 	public static var wantQuit(default,null):Bool = false;
 
 	public static var whenAchievementStored:String->Void;
-	public static var whenLeaderboardScoreDownloaded:LeaderboardScore->Void;
+	public static var whenLeaderboardScoresDownloaded:Array<LeaderboardScore>->Void;
 	public static var whenLeaderboardScoreUploaded:LeaderboardScore->Void;
 	public static var whenTrace:String->Void;
 
@@ -39,15 +56,20 @@ class SteamWrap
 			SteamWrap_Init = cpp.Lib.load("steamwrap", "SteamWrap_Init", 1);
 			SteamWrap_Shutdown = cpp.Lib.load("steamwrap", "SteamWrap_Shutdown", 0);
 			SteamWrap_RunCallbacks = cpp.Lib.load("steamwrap", "SteamWrap_RunCallbacks", 0);
+			SteamWrap_SetNotificationPosition = cpp.Lib.load("steamwrap", "SteamWrap_SetNotificationPosition", 1);
+			SteamWrap_GetUserID64 = cpp.Lib.load("steamwrap", "SteamWrap_GetUserID64", 0);
+			SteamWrap_GetUsername = Lib.load("steamwrap", "SteamWrap_GetUsername", 0);
 			SteamWrap_RequestStats = cpp.Lib.load("steamwrap", "SteamWrap_RequestStats", 0);
 			SteamWrap_GetStat = cpp.Lib.load("steamwrap", "SteamWrap_GetStat", 1);
 			SteamWrap_SetStat = cpp.Lib.load("steamwrap", "SteamWrap_SetStat", 2);
 			SteamWrap_SetAchievement = cpp.Lib.load("steamwrap", "SteamWrap_SetAchievement", 1);
 			SteamWrap_ClearAchievement = cpp.Lib.load("steamwrap", "SteamWrap_ClearAchievement", 1);
+			SteamWrap_IndicateAchievementProgress = cpp.Lib.load("steamwrap", "SteamWrap_IndicateAchievementProgress", 3);
 			SteamWrap_StoreStats = cpp.Lib.load("steamwrap", "SteamWrap_StoreStats", 0);
 			SteamWrap_FindLeaderboard = cpp.Lib.load("steamwrap", "SteamWrap_FindLeaderboard", 1);
+			SteamWrap_GetLeaderboardEntryCount = cpp.Lib.load("steamwrap", "SteamWrap_GetLeaderboardEntryCount", 1);
 			SteamWrap_UploadScore = cpp.Lib.load("steamwrap", "SteamWrap_UploadScore", 3);
-			SteamWrap_DownloadScores = cpp.Lib.load("steamwrap", "SteamWrap_DownloadScores", 3);
+			SteamWrap_DownloadScores = cpp.Lib.load("steamwrap", "SteamWrap_DownloadScores", 4);
 			SteamWrap_RequestGlobalStats = cpp.Lib.load("steamwrap", "SteamWrap_RequestGlobalStats", 0);
 			SteamWrap_GetGlobalStat = cpp.Lib.load("steamwrap", "SteamWrap_GetGlobalStat", 1);
 			SteamWrap_RestartAppIfNecessary = cpp.Lib.load("steamwrap", "SteamWrap_RestartAppIfNecessary", 1);
@@ -109,6 +131,29 @@ class SteamWrap
 		return result;
 	}
 
+	public static function setNotificationPosition(notifyPos:NotificationPosition):Bool
+	{
+		return active && report("setNotificationPosition", [Type.enumConstructor(notifyPos)], SteamWrap_SetNotificationPosition(Type.enumIndex(notifyPos)));
+	}
+	
+	public static function getUserID64():String
+	{
+		if (!active) return "";
+		
+		var userID:String = SteamWrap_GetUserID64();
+		report("getUserID64", [], userID.length > 0);
+		return userID;
+	}
+	
+	public static function getUsername():String
+	{
+		if (!active) return "";
+		
+		var username:String = SteamWrap_GetUsername();
+		report("getUsername", [], username.length > 0);
+		return username;
+	}
+	
 	public static function setAchievement(id:String):Bool
 	{
 		return active && report("setAchievement", [id], SteamWrap_SetAchievement(id));
@@ -117,6 +162,21 @@ class SteamWrap
 	public static function clearAchievement(id:String):Bool
 	{
 		return active && report("clearAchievement", [id], SteamWrap_ClearAchievement(id));
+	}
+
+	public static function indicateAchievementProgress(id:String, curProgress:Int, maxProgress:Int):Bool
+	{
+		return active && report("indicateAchivevementProgress", [id, Std.string(curProgress), Std.string(maxProgress)], SteamWrap_IndicateAchievementProgress(id, curProgress, maxProgress));
+	}
+
+	// Kinda awkwardly returns 0 on errors and uses 0 for checking success
+	public static function getStat(id:String):Int
+	{
+		if (!active)
+			return 0;
+		var val = SteamWrap_GetStat(id);
+		report("getStat", [id], val != 0);
+		return val;
 	}
 
 	public static function setStat(id:String, val:Int):Bool
@@ -148,6 +208,16 @@ class SteamWrap
 		}
 	}
 
+	// This becomes valid once a score completes uploading to or downloading from the specified leaderboard. Until then, it will return 0.
+	public static function getLeaderboardEntryCount(id:String):Int
+	{
+		if (!active)
+			return 0;
+		var val = SteamWrap_GetLeaderboardEntryCount(id);
+		report("getLeaderboardEntryCount", [id], val != 0);
+		return val;
+	}
+	
 	public static function uploadLeaderboardScore(score:LeaderboardScore):Bool
 	{
 		if (!active) return false;
@@ -158,12 +228,12 @@ class SteamWrap
 		return true;
 	}
 
-	public static function downloadLeaderboardScore(id:String):Bool
+	public static function downloadLeaderboardScores(leaderboardId:String, requestType:LeaderboardRequestType, start:Int, end:Int):Bool
 	{
 		if (!active) return false;
 		var startProcessingNow = (leaderboardOps.length == 0);
-		findLeaderboardIfNecessary(id);
-		leaderboardOps.add(LeaderboardOp.DOWNLOAD(id));
+		findLeaderboardIfNecessary(leaderboardId);
+		leaderboardOps.add(LeaderboardOp.DOWNLOAD(leaderboardId, requestType, start, end));
 		if (startProcessingNow) processNextLeaderboardOp();
 		return true;
 	}
@@ -179,10 +249,10 @@ class SteamWrap
 				if (!report("Leaderboard.FIND", [id], SteamWrap_FindLeaderboard(id)))
 					processNextLeaderboardOp();
 			case UPLOAD(score):
-				if (!report("Leaderboard.UPLOAD", [score.toString()], SteamWrap_UploadScore(score.leaderboardId, score.score, score.detail)))
+				if (!report("Leaderboard.UPLOAD", [score.toString()], SteamWrap_UploadScore(score.leaderboardId, score.score, [score.details.length].concat(score.details))))
 					processNextLeaderboardOp();
-			case DOWNLOAD(id):
-				if (!report("Leaderboard.DOWNLOAD", [id], SteamWrap_DownloadScores(id, 0, 0)))
+			case DOWNLOAD(id, requestType, start, end):
+				if (!report("Leaderboard.DOWNLOAD", [id, Type.enumConstructor(requestType), Std.string(start), Std.string(end)], SteamWrap_DownloadScores(id, Type.enumIndex(requestType), start, end)))
 					processNextLeaderboardOp();
 		}
 	}
@@ -231,12 +301,17 @@ class SteamWrap
 			case "ScoreDownloaded":
 				if (success)
 				{
-					var scores = data.split(";");
-					for (score in scores)
+					var scores:Array<LeaderboardScore> = new Array<LeaderboardScore>();
+					if ( data.length > 0 )
 					{
-						var score = LeaderboardScore.fromString(data);
-						if (score != null && whenLeaderboardScoreDownloaded != null) whenLeaderboardScoreDownloaded(score);
+						var scoresTxt:Array<String> = data.split(";");
+						for (scoreTxt in scoresTxt)
+						{
+							var score:LeaderboardScore = LeaderboardScore.fromString(scoreTxt);
+							scores.push(score);
+						}
 					}
+					if (whenLeaderboardScoresDownloaded != null) whenLeaderboardScoresDownloaded(scores);
 				}
 				processNextLeaderboardOp();
 			case "ScoreUploaded":
@@ -251,16 +326,21 @@ class SteamWrap
 
 	private static var SteamWrap_Init:Dynamic;
 	private static var SteamWrap_Shutdown:Dynamic;
+	private static var SteamWrap_SetNotificationPosition:Dynamic;
 	private static var SteamWrap_RunCallbacks:Dynamic;
+	private static var SteamWrap_GetUserID64:Void->String;
+	private static var SteamWrap_GetUsername:Void->String;
 	private static var SteamWrap_RequestStats:Dynamic;
 	private static var SteamWrap_GetStat:Dynamic;
 	private static var SteamWrap_SetStat:Dynamic;
 	private static var SteamWrap_SetAchievement:Dynamic;
 	private static var SteamWrap_ClearAchievement:Dynamic;
+	private static var SteamWrap_IndicateAchievementProgress:Dynamic;
 	private static var SteamWrap_StoreStats:Dynamic;
 	private static var SteamWrap_FindLeaderboard:Dynamic;
-	private static var SteamWrap_UploadScore:String->Int->Int->Bool;
-	private static var SteamWrap_DownloadScores:String->Int->Int->Bool;
+	private static var SteamWrap_GetLeaderboardEntryCount:String->Int;
+	private static var SteamWrap_UploadScore:String->Int->Array<Int>->Bool;
+	private static var SteamWrap_DownloadScores:String->Int->Int->Int->Bool;
 	private static var SteamWrap_RequestGlobalStats:Dynamic;
 	private static var SteamWrap_GetGlobalStat:Dynamic;
 	private static var SteamWrap_RestartAppIfNecessary:Dynamic;
@@ -270,31 +350,57 @@ class SteamWrap
 class LeaderboardScore
 {
 	public var leaderboardId:String;
+	public var playerName:String;
 	public var score:Int;
-	public var detail:Int;
+	public var details:Array<Int>;
 	public var rank:Int;
 	
-	public function new(leaderboardId_:String, score_:Int, detail_:Int, rank_:Int=-1)
+	public function new(leaderboardId_:String, playerName_:String, score_:Int, detail_:Int, rank_:Int=-1)
 	{
 		leaderboardId = leaderboardId_;
+		playerName = playerName_;
 		score = score_;
-		detail = detail_;
+		details = [detail_];
 		rank = rank_;
 	}
 
+	public function setExtraDetail(detailPos_:Int, detailVal_:Int):Bool
+	{
+		if (detailPos_ < 0 || detailPos_ > 63)
+		{
+			return false;
+		}
+	
+		while (details.length < detailPos_)
+		{
+			details.push(0);
+		}
+		
+		details[detailPos_] = detailVal_;
+		
+		return true;
+	}
+	
 	public function toString():String
 	{
-		return leaderboardId  + "," + score + "," + detail + "," + rank;
+		return leaderboardId  + "," + playerName + "," + score + "," + rank + "," + details.length + "," + details.join(",");
 	}
 
 	public static function fromString(str:String):LeaderboardScore
 	{
 		var tokens = str.split(",");
-		if (tokens.length == 4)
-			return new LeaderboardScore(tokens[0], Std.parseInt(tokens[1]), Std.parseInt(tokens[2]), Std.parseInt(tokens[3]));
-		else
+		
+		if (tokens.length < 6 || tokens.length != 5 + Std.parseInt(tokens[4]))
+		{
 			return null;
+		}
+		
+		var entry:LeaderboardScore = new LeaderboardScore(tokens[0], tokens[1], Std.parseInt(tokens[2]), Std.parseInt(tokens[5]), Std.parseInt(tokens[3]));
+		for (i in 6...tokens.length)
+		{
+			entry.setExtraDetail(i - 5, Std.parseInt(tokens[i]));
+		}
+		
+		return entry;
 	}
 }
-
-
